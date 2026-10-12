@@ -8,7 +8,8 @@
   "homepage": "https://daxaur.github.io/tabia/",
   "scripts": {
     "dev": "python3 -m http.server 4173",
-    "validate": "node tools/validate.mjs"
+    "validate": "node tools/validate.mjs",
+    "check-tr": "node tools/check-tr.mjs"
   },
   "keywords": ["chess", "openings", "trainer", "repertoire", "spaced-repetition", "self-hosted"]
 }

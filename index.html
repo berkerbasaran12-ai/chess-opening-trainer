@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" id="htmlRoot">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -14,8 +14,8 @@
 <meta property="og:site_name" content="tabia">
 <meta property="og:title" content="tabia — open-source chess opening drills">
 <meta property="og:description" content="Drill your repertoire until it's muscle memory. Browser-local, no account, no server. Open source.">
-<meta property="og:url" content="https://daxaur.github.io/tabia/">
-<meta property="og:image" content="https://daxaur.github.io/tabia/assets/og.png">
+<meta property="og:url" content="https://chess.marbasa.com/">
+<meta property="og:image" content="https://chess.marbasa.com/assets/og.png">
 <meta property="og:image:width" content="1326">
 <meta property="og:image:height" content="1000">
 <meta name="twitter:card" content="summary_large_image">
@@ -25,7 +25,7 @@
 <meta name="theme-color" content="#000000">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="src/style.css?v=50">
+<link rel="stylesheet" href="src/style.css?v=51">
 <script>
   // network-first service worker so deploys are never masked by stale cache
   if ('serviceWorker' in navigator) {
@@ -35,21 +35,22 @@
 </head>
 <body>
 <header class="top">
-  <button class="brand" id="brandHome" title="tabia — home">
+  <button class="brand" id="brandHome" data-i18n-title="brand.title" title="tabia — home">
     <img src="assets/favicon.png" alt="" width="30" height="30">
     <canvas id="brandLogo" width="160" height="42" aria-label="tabia"></canvas>
     <span class="brandword" aria-hidden="true">tabia</span>
   </button>
   <nav class="top">
-    <button data-view="home" class="active"><span class="bi" id="navHomeIcon"></span>Home</button>
-    <button data-view="train"><span class="bi" id="navStudyIcon"></span>Study</button>
-    <button data-view="saved"><span class="bi" id="navSavedIcon"></span>Saved<span class="nav-count" id="savedCount" hidden>0</span></button>
-    <button data-view="coach" class="nav-ai"><span class="bi" id="navCoachIcon"></span>AI</button>
+    <button data-view="home" class="active"><span class="bi" id="navHomeIcon"></span><span data-i18n="nav.home">Home</span></button>
+    <button data-view="train"><span class="bi" id="navStudyIcon"></span><span data-i18n="nav.study">Study</span></button>
+    <button data-view="saved"><span class="bi" id="navSavedIcon"></span><span data-i18n="nav.saved">Saved</span><span class="nav-count" id="savedCount" hidden>0</span></button>
+    <button data-view="coach" class="nav-ai"><span class="bi" id="navCoachIcon"></span><span data-i18n="nav.ai">AI</span></button>
   </nav>
   <div class="right">
-    <button class="cta" data-view="create" id="createCta"><span class="bi" id="navCreateIcon"></span>Create</button>
-    <button class="ghbtn connect" id="connectBtn"><span class="bi" id="connectIcon"></span><span id="connectLabel">Connect</span></button>
-    <a class="ghbtn gh" id="ghlink" href="#" target="_blank" title="Source on GitHub"><span class="bi" id="ghIcon"></span>GitHub</a>
+    <button class="cta" data-view="create" id="createCta"><span class="bi" id="navCreateIcon"></span><span data-i18n="nav.create">Create</span></button>
+    <button class="ghbtn lang" id="langBtn" title="Dil / Language">TR</button>
+    <button class="ghbtn connect" id="connectBtn"><span class="bi" id="connectIcon"></span><span id="connectLabel" data-i18n="nav.connect">Connect</span></button>
+    <a class="ghbtn gh" id="ghlink" href="#" target="_blank" title="Source on GitHub"><span class="bi" id="ghIcon"></span><span data-i18n="nav.github">GitHub</span></a>
   </div>
 </header>
 
@@ -61,32 +62,32 @@
       <div class="hero">
         <canvas id="heroFx" class="herofx"></canvas>
         <div class="herotext">
-          <span class="kicker">open source · browser-local · spaced repetition</span>
-          <h1>Drill your openings<br>until they’re <span class="shimmer">muscle memory</span>.</h1>
-          <p>Pick an opening, train its lines, and let spaced repetition do the rest.
+          <span class="kicker" data-i18n="hero.kicker">open source · browser-local · spaced repetition</span>
+          <h1 data-i18n-html="hero.h1">Drill your openings<br>until they’re <span class="shimmer">muscle memory</span>.</h1>
+          <p data-i18n-html="hero.lead">Pick an opening, train its lines, and let spaced repetition do the rest.
              No account, no server — your prep lives in this browser.</p>
         </div>
       </div>
       <button class="coach-teaser ai" id="coachTeaser">
         <span class="ct-ico">✦</span>
-        <span class="ct-txt"><b>Not sure what to play?</b> <span class="ct-ai">tabia AI</span> reads your games and matches an opening to your style — free, no sign-in.</span>
-        <span class="ct-go">Try it →</span>
+        <span class="ct-txt"><b data-i18n="teaser.ask">Not sure what to play?</b> <span class="ct-ai" data-i18n="teaser.ai">tabia AI</span> <span data-i18n="teaser.body">reads your games and matches an opening to your style — free, no sign-in.</span></span>
+        <span class="ct-go" data-i18n="teaser.go">Try it →</span>
       </button>
-      <div class="lib-head"><h2>Openings</h2><span class="lib-sub" id="libSub"></span>
-        <button class="cta sm" id="homeCreate"><span class="bi" id="homeCreateIcon"></span>Create your own</button></div>
-      <div class="lib-search-row"><input id="libSearch" class="lib-search" type="search" placeholder="🔍  Search openings — name, ECO, idea…" autocomplete="off" spellcheck="false"></div>
+      <div class="lib-head"><h2 data-i18n="lib.heading">Openings</h2><span class="lib-sub" id="libSub"></span>
+        <button class="cta sm" id="homeCreate"><span class="bi" id="homeCreateIcon"></span><span data-i18n="lib.createOwn">Create your own</span></button></div>
+      <div class="lib-search-row"><input id="libSearch" class="lib-search" type="search" data-i18n-placeholder="lib.searchPlaceholder" placeholder="🔍  Search openings — name, ECO, idea…" autocomplete="off" spellcheck="false"></div>
       <div class="lib-filter" id="libFilter"></div>
       <div class="library" id="library"></div>
       <div class="lib-empty" id="libEmpty" hidden></div>
       <div class="foot">
-        <span>tabia · MIT · your data never leaves this browser</span>
+        <span data-i18n="lib.footTag">tabia · MIT · your data never leaves this browser</span>
         <span id="footStats"></span>
       </div>
     </section>
 
     <!-- SAVED — the user's starred openings -->
     <section class="view" id="view-saved">
-      <div class="lib-head"><h2 id="savedWho">Your saved openings</h2><span class="lib-sub">★ the openings you starred</span></div>
+      <div class="lib-head"><h2 id="savedWho" data-i18n="saved.heading">Your saved openings</h2><span class="lib-sub" data-i18n="saved.sub">★ the openings you starred</span></div>
       <div class="library" id="savedLib"></div>
     </section>
 
@@ -95,20 +96,20 @@
       <!-- wizard: fill-out on the left, live preview on the right -->
       <div class="coach-wizard" id="coachWizard">
         <div class="cw-left">
-          <span class="cw-badge">✦ tabia AI · free · no sign-in</span>
-          <h1>The opening<br>that fits <em>you</em></h1>
-          <p class="cw-lead">We read your recent games and match an opening to how you actually play — right here in your browser.</p>
+          <span class="cw-badge" data-i18n="coach.badge">✦ tabia AI · free · no sign-in</span>
+          <h1 data-i18n-html="coach.h1">The opening<br>that fits <em>you</em></h1>
+          <p class="cw-lead" data-i18n="coach.lead">We read your recent games and match an opening to how you actually play — right here in your browser.</p>
 
-          <label class="cw-label" for="coachUser">1 · Your username</label>
-          <input id="coachUser" class="cw-input" placeholder="e.g. magnuscarlsen" autocomplete="off" spellcheck="false">
+          <label class="cw-label" for="coachUser" data-i18n="coach.step1">1 · Your username</label>
+          <input id="coachUser" class="cw-input" data-i18n-placeholder="coach.userPlaceholder" placeholder="e.g. magnuscarlsen" autocomplete="off" spellcheck="false">
 
-          <label class="cw-label">2 · Where you play</label>
+          <label class="cw-label" data-i18n="coach.step2">2 · Where you play</label>
           <div class="seg seg-logo seg-big" id="coachSite">
-            <button data-site="chesscom" class="active"><span class="bi" id="csCcLogo"></span>Chess.com</button>
-            <button data-site="lichess"><span class="bi" id="csLiLogo"></span>Lichess</button>
+            <button data-site="chesscom" class="active"><span class="bi" id="csCcLogo"></span><span data-i18n="coach.chesscom">Chess.com</span></button>
+            <button data-site="lichess"><span class="bi" id="csLiLogo"></span><span data-i18n="coach.lichess">Lichess</span></button>
           </div>
 
-          <button class="btn primary cw-go" id="coachGo">✦ Analyse my games</button>
+          <button class="btn primary cw-go" id="coachGo" data-i18n="coach.go">✦ Analyse my games</button>
           <div class="coach-status" id="coachStatus"></div>
         </div>
 
@@ -116,7 +117,7 @@
           <div class="show-card">
             <canvas id="sampleCanvas" aria-label="example tabia style card"></canvas>
           </div>
-          <div class="show-tag">live preview · this is the card you get</div>
+          <div class="show-tag" data-i18n="coach.previewTag">live preview · this is the card you get</div>
         </div>
       </div>
 
@@ -125,14 +126,14 @@
 
     <!-- OPENING DETAIL (folders → branches) -->
     <section class="view" id="view-opening">
-      <div class="crumbs"><a id="crumbHome">Home</a> <span>›</span> <b id="crumbName"></b></div>
+      <div class="crumbs"><a id="crumbHome" data-i18n="nav.home">Home</a> <span>›</span> <b id="crumbName"></b></div>
       <div class="op-head">
         <div class="op-meta">
           <span class="kicker" id="opEco"></span>
           <h1 id="opName"></h1>
           <p id="opOneliner"></p>
           <div class="op-actions">
-            <button class="btn primary" id="opTrain">▶ Study this opening</button>
+            <button class="btn primary" id="opTrain" data-i18n="opening.studyBtn">▶ Study this opening</button>
           </div>
         </div>
         <div class="op-preview"><div id="opBoard"></div></div>
@@ -142,65 +143,65 @@
 
     <!-- CREATE — opening builder -->
     <section class="view" id="view-create">
-      <div class="crumbs"><a id="crCrumbHome">Home</a> <span>›</span> <b id="crTitle">Create an opening</b></div>
+      <div class="crumbs"><a id="crCrumbHome" data-i18n="nav.home">Home</a> <span>›</span> <b id="crTitle" data-i18n="create.crumb">Create an opening</b></div>
 
       <div class="cr-gate" id="crGate" hidden>
         <div class="cr-gate-card">
-          <h2>Sign in to create openings</h2>
-          <p>Connect with Lichess so your openings are saved to you. Free, secure OAuth, and it stays in this browser.</p>
-          <button class="btn primary big" id="crGateConnect">⚇ Connect with Lichess</button>
+          <h2 data-i18n="create.gateTitle">Sign in to create openings</h2>
+          <p data-i18n="create.gateBody">Connect with Lichess so your openings are saved to you. Free, secure OAuth, and it stays in this browser.</p>
+          <button class="btn primary big" id="crGateConnect" data-i18n="create.gateConnect">⚇ Connect with Lichess</button>
         </div>
       </div>
 
       <div id="crBuilder">
       <div class="cr-meta">
-        <input id="crName" placeholder="Opening name — e.g. My Catalan" autocomplete="off">
-        <div class="seg" id="crColor" title="Which side you play"><button data-c="w" class="active">Play White</button><button data-c="b">Play Black</button></div>
-        <input id="crEco" placeholder="ECO" maxlength="6" autocomplete="off">
-        <input id="crOne" placeholder="One-line description (optional)" autocomplete="off">
+        <input id="crName" data-i18n-placeholder="create.namePlaceholder" placeholder="Opening name — e.g. My Catalan" autocomplete="off">
+        <div class="seg" id="crColor" title="Which side you play"><button data-c="w" class="active" data-i18n="create.playWhite">Play White</button><button data-c="b" data-i18n="create.playBlack">Play Black</button></div>
+        <input id="crEco" data-i18n-placeholder="create.ecoPlaceholder" placeholder="ECO" maxlength="6" autocomplete="off">
+        <input id="crOne" data-i18n-placeholder="create.onePlaceholder" placeholder="One-line description (optional)" autocomplete="off">
       </div>
 
       <div class="cr-grid">
         <div class="cr-board-col">
           <div class="boardwrap"><div id="crBoard"></div></div>
           <div class="bctrls">
-            <button class="btn" id="crUndo">↶ Undo move</button>
-            <button class="btn ghost" id="crResetLine">Reset line</button>
-            <button class="btn ghost" id="crFlip">⇅ Flip</button>
+            <button class="btn" id="crUndo" data-i18n="create.undo">↶ Undo move</button>
+            <button class="btn ghost" id="crResetLine" data-i18n="create.resetLine">Reset line</button>
+            <button class="btn ghost" id="crFlip" data-i18n="create.flip">⇅ Flip</button>
           </div>
-          <div class="hintbar">Play the moves on the board, or import a PGN below. Click any move to give it a comment and its own correct/wrong coach lines.</div>
+          <div class="hintbar" data-i18n="create.hint">Play the moves on the board, or import a PGN below. Click any move to give it a comment and its own correct/wrong coach lines.</div>
           <div class="movelist icons clickable" id="crMoves">—</div>
           <div class="cr-step" id="crStep" hidden></div>
 
           <div class="cr-pgn">
-            <button class="btn ghost sm" id="crPgnToggle">⇪ Import from PGN</button>
+            <button class="btn ghost sm" id="crPgnToggle" data-i18n="create.importPgn">⇪ Import from PGN</button>
             <div class="cr-pgn-box" id="crPgnBox" hidden>
-              <textarea id="crPgnText" rows="5" placeholder="Paste a PGN here. One game → one line. Multiple games → multiple lines. Headers and comments are fine."></textarea>
+              <textarea id="crPgnText" rows="5" data-i18n-placeholder="create.pgnPlaceholder" placeholder="Paste a PGN here. One game → one line. Multiple games → multiple lines. Headers and comments are fine."></textarea>
               <div class="cr-pgn-act">
-                <button class="btn primary sm" id="crPgnImport">＋ Build line(s) from PGN</button>
-                <span class="cr-pgn-hint">Tip: export a game from Lichess/Chess.com and paste it here.</span>
+                <button class="btn primary sm" id="crPgnImport" data-i18n="create.buildLines">＋ Build line(s) from PGN</button>
+                <span class="cr-pgn-hint" data-i18n="create.pgnHint">Tip: export a game from Lichess/Chess.com and paste it here.</span>
               </div>
             </div>
           </div>
         </div>
 
         <aside class="cr-line">
-          <h3>This line</h3>
-          <input id="crLineName" placeholder="Line name — e.g. Main line" autocomplete="off">
-          <input id="crLineGroup" placeholder="Group — e.g. Main, Sidelines" autocomplete="off">
-          <input id="crLineIdea" placeholder="The idea / plan (optional)" autocomplete="off">
-          <button class="btn ghost sm" id="crMsgToggle">＋ Line-wide coach messages</button>
+          <h3 data-i18n="create.lineHeading">This line</h3>
+          <input id="crLineName" data-i18n-placeholder="create.lineNamePlaceholder" placeholder="Line name — e.g. Main line" autocomplete="off">
+          <input id="crLineGroup" data-i18n-placeholder="create.lineGroupPlaceholder" placeholder="Group — e.g. Main, Sidelines" autocomplete="off">
+          <input id="crLineIdea" data-i18n-placeholder="create.lineIdeaPlaceholder" placeholder="The idea / plan (optional)" autocomplete="off">
+          <button class="btn ghost sm" id="crMsgToggle" data-i18n="create.lineMsgToggle">＋ Line-wide coach messages</button>
           <div id="crMsgBox" hidden></div>
-          <button class="btn primary" id="crAddLine">＋ Add this line</button>
+          <button class="btn primary" id="crAddLine" data-i18n="create.addLine">＋ Add this line</button>
 
-          <div class="cr-lines-head">Lines added · <span id="crLineCount">0</span></div>
+          <div class="cr-lines-head"><span data-i18n="create.linesAdded">Lines added ·</span> <span id="crLineCount">0</span></div>
           <div class="cr-lines" id="crLines"></div>
         </aside>
       </div>
 
       <div class="cr-actions">
-        <button class="btn primary big" id="crSave">✓ Save opening</button>
-        <button class="btn ghost" id="crCancel">Cancel</button>
+        <button class="btn primary big" id="crSave" data-i18n="create.save">✓ Save opening</button>
+        <button class="btn ghost" id="crCancel" data-i18n="create.cancel">Cancel</button>
         <span class="cr-status" id="crStatus"></span>
       </div>
       </div><!-- /crBuilder -->
@@ -211,18 +212,18 @@
       <div class="hub">
         <div class="hub-board">
           <div class="boardrow">
-            <div class="evalbar" id="trEvalBar" title="Stockfish evaluation, from White's point of view. In a drill your opponent plays the book move — not always the engine's top choice — so the bar can swing."><i id="trEvalFill"></i></div>
+            <div class="evalbar" id="trEvalBar" data-i18n-title="train.evalTitle" title="Stockfish evaluation, from White's point of view. In a drill your opponent plays the book move — not always the engine's top choice — so the bar can swing."><i id="trEvalFill"></i></div>
             <div class="boardwrap big"><div id="trBoard"></div></div>
           </div>
           <div class="hub-controls">
-            <button class="ic" id="trSettings" title="Coach messages">⚙</button>
-            <button class="ic on" id="trSound" title="Sound on/off">🔊</button>
-            <button class="ic" id="trFlip" title="Flip board">⇅</button>
-            <span class="evread" id="trEvalRead" title="Stockfish eval, White's point of view">+0.0</span>
+            <button class="ic" id="trSettings" data-i18n-title="train.settingsTitle" title="Coach messages">⚙</button>
+            <button class="ic on" id="trSound" data-i18n-title="train.soundTitle" title="Sound on/off">🔊</button>
+            <button class="ic" id="trFlip" data-i18n-title="train.flipTitle" title="Flip board">⇅</button>
+            <span class="evread" id="trEvalRead" data-i18n-title="train.evalTitle" title="Stockfish eval, White's point of view">+0.0</span>
             <span class="sp"></span>
-            <button class="btn ghost" id="trHint">💡 Hint</button>
-            <button class="ic" id="trPrev" title="Step back" disabled>‹</button>
-            <button class="ic" id="trNext" title="Step forward" disabled>›</button>
+            <button class="btn ghost" id="trHint" data-i18n="train.hint">💡 Hint</button>
+            <button class="ic" id="trPrev" data-i18n-title="train.prevTitle" title="Step back" disabled>‹</button>
+            <button class="ic" id="trNext" data-i18n-title="train.nextTitle" title="Step forward" disabled>›</button>
           </div>
         </div>
 
@@ -231,43 +232,43 @@
             <div class="coach-av" id="trAvatar">♞</div>
             <div class="coach-body">
               <div class="coach-name">
-                <span id="trModeIcon">🥁</span> <b id="trModeName">Drill</b>
+                <span id="trModeIcon">🥁</span> <b id="trModeName" data-i18n="mode.drill.name">Drill</b>
                 <span class="coach-op" id="trOpName"></span>
                 <span class="coach-idx" id="trLineIdx"></span>
               </div>
-              <div class="coach-bubble" id="trBubble">Pick a mode, then press Start.</div>
+              <div class="coach-bubble" id="trBubble" data-i18n="train.pickMode">Pick a mode, then press Start.</div>
             </div>
           </div>
 
           <div class="modegrid" id="trModes">
-            <button class="modetile" data-mode="learn"><span class="mi">📖</span><span class="ml">Learn</span><span class="ms" id="ms-learn">walk the lines</span></button>
-            <button class="modetile" data-mode="practice"><span class="mi">🎯</span><span class="ml">Practice</span><span class="ms">free play · no score</span></button>
-            <button class="modetile active" data-mode="drill"><span class="mi">🥁</span><span class="ml">Drill</span><span class="ms" id="ms-drill">scored · spaced reps</span></button>
-            <button class="modetile" data-mode="hyper"><span class="mi">⚡</span><span class="ml">Hyper</span><span class="ms">bot plays a line</span></button>
+            <button class="modetile" data-mode="learn"><span class="mi">📖</span><span class="ml" data-i18n="mode.learn.name">Learn</span><span class="ms" id="ms-learn" data-i18n="mode.learn.sub">walk the lines</span></button>
+            <button class="modetile" data-mode="practice"><span class="mi">🎯</span><span class="ml" data-i18n="mode.practice.name">Practice</span><span class="ms" data-i18n="mode.practice.sub">free play · no score</span></button>
+            <button class="modetile active" data-mode="drill"><span class="mi">🥁</span><span class="ml" data-i18n="mode.drill.name">Drill</span><span class="ms" id="ms-drill" data-i18n="mode.drill.sub">scored · spaced reps</span></button>
+            <button class="modetile" data-mode="hyper"><span class="mi">⚡</span><span class="ml" data-i18n="mode.hyper.name">Hyper</span><span class="ms" data-i18n="mode.hyper.sub">bot plays a line</span></button>
           </div>
 
           <div class="hub-actions">
-            <button class="btn primary big" id="trStart">▶ Start</button>
-            <button class="btn" id="trSkip">⏭ Skip line</button>
-            <button class="btn" id="trRestart" hidden>↻ New round</button>
+            <button class="btn primary big" id="trStart" data-i18n="train.start">▶ Start</button>
+            <button class="btn" id="trSkip" data-i18n="train.skip">⏭ Skip line</button>
+            <button class="btn" id="trRestart" hidden data-i18n="train.newRound">↻ New round</button>
           </div>
 
           <div class="stats compact">
-            <div class="stat"><div class="n" id="trCorrect">0</div><div class="l">correct</div></div>
-            <div class="stat"><div class="n" id="trWrong">0</div><div class="l">missed</div></div>
-            <div class="stat"><div class="n" id="trDue">0</div><div class="l">due</div></div>
-            <div class="stat"><div class="n" id="trRounds">0</div><div class="l">rounds</div></div>
+            <div class="stat"><div class="n" id="trCorrect">0</div><div class="l" data-i18n="stats.correct">correct</div></div>
+            <div class="stat"><div class="n" id="trWrong">0</div><div class="l" data-i18n="stats.wrong">missed</div></div>
+            <div class="stat"><div class="n" id="trDue">0</div><div class="l" data-i18n="stats.due">due</div></div>
+            <div class="stat"><div class="n" id="trRounds">0</div><div class="l" data-i18n="stats.rounds">rounds</div></div>
           </div>
 
           <div class="panel" id="linesPanel">
-            <div class="ph"><h3>Lines <span class="disc" id="trDiscovered"></span></h3>
+            <div class="ph"><h3><span data-i18n="lines.heading">Lines</span> <span class="disc" id="trDiscovered"></span></h3>
               <div class="seg mini" id="trScope"></div>
             </div>
             <div class="varlist" id="trMastery"></div>
           </div>
 
           <div class="panel">
-            <h3>Moves</h3>
+            <h3 data-i18n="moves.heading">Moves</h3>
             <div class="movelist icons" id="trMoves">—</div>
           </div>
         </aside>
@@ -276,37 +277,45 @@
       <!-- settings drawer (board + coach messages) -->
       <div class="msgcfg" id="trMsgCfg" hidden>
         <div class="msgcfg-card">
-          <div class="msgcfg-head"><h3>Settings</h3><button class="btn ghost sm" id="trMsgClose">✕ Close</button></div>
+          <div class="msgcfg-head"><h3 data-i18n="settings.title">Settings</h3><button class="btn ghost sm" id="trMsgClose" data-i18n="settings.close">✕ Close</button></div>
 
           <div class="set-block">
-            <label class="set-lbl">Board pieces</label>
+            <label class="set-lbl" data-i18n="settings.language">Language</label>
+            <div class="seg" id="langSeg">
+              <button data-lang="en" class="active">English</button>
+              <button data-lang="tr">Türkçe</button>
+            </div>
+          </div>
+
+          <div class="set-block">
+            <label class="set-lbl" data-i18n="settings.boardPieces">Board pieces</label>
             <div class="pieceset" id="pieceSeg"></div>
           </div>
 
           <div class="set-block">
-            <label class="set-lbl">Move method</label>
+            <label class="set-lbl" data-i18n="settings.moveMethod">Move method</label>
             <div class="seg" id="moveMethodSeg">
-              <button data-mm="both" class="active">Drag + click</button>
-              <button data-mm="drag">Drag only</button>
-              <button data-mm="click">Click only</button>
+              <button data-mm="both" class="active" data-i18n="create.flip">Drag + click</button>
+              <button data-mm="drag" data-i18n="settings.dragOnly">Drag only</button>
+              <button data-mm="click" data-i18n="settings.clickOnly">Click only</button>
             </div>
           </div>
 
           <div class="set-block">
-            <label class="set-lbl">Sounds</label>
+            <label class="set-lbl" data-i18n="settings.sounds">Sounds</label>
             <div class="seg" id="soundSeg">
-              <button data-snd="on" class="active">On</button>
-              <button data-snd="off">Off</button>
+              <button data-snd="on" class="active" data-i18n="settings.on">On</button>
+              <button data-snd="off" data-i18n="settings.off">Off</button>
             </div>
           </div>
 
           <div class="set-block">
-            <label class="set-lbl">Coach messages</label>
-            <p class="small">One message per line. Blank = defaults. <code>{exp}</code> = the correct move.</p>
+            <label class="set-lbl" data-i18n="settings.coachMessages">Coach messages</label>
+            <p class="small" data-i18n="settings.coachMsgHint">One message per line. Blank = defaults. <code>{exp}</code> = the correct move.</p>
             <div id="trMsgFields"></div>
             <div class="msgcfg-actions">
-              <button class="btn primary" id="trMsgSave">Save messages</button>
-              <button class="btn ghost" id="trMsgReset">Reset to defaults</button>
+              <button class="btn primary" id="trMsgSave" data-i18n="settings.saveMessages">Save messages</button>
+              <button class="btn ghost" id="trMsgReset" data-i18n="settings.resetDefaults">Reset to defaults</button>
             </div>
           </div>
         </div>
@@ -320,12 +329,12 @@
   <div class="wrap foot-grid">
     <div class="foot-col">
       <canvas id="footLogo" width="120" height="30" aria-label="tabia"></canvas>
-      <p class="foot-tag">Open-source chess opening trainer. Browser-local, no server, no tracking — your prep never leaves this machine.</p>
-      <a class="foot-link" id="footGh" href="#" target="_blank"><span class="bi" id="footGhIcon"></span> Source on GitHub</a>
+      <p class="foot-tag" data-i18n="footer.tag">Open-source chess opening trainer. Browser-local, no server, no tracking — your prep never leaves this machine.</p>
+      <a class="foot-link" id="footGh" href="#" target="_blank"><span class="bi" id="footGhIcon"></span> <span data-i18n="footer.sourceGh">Source on GitHub</span></a>
     </div>
     <div class="foot-col">
-      <div class="foot-h">Support tabia</div>
-      <p class="foot-mini">If tabia helps you, a tip keeps it free and open.</p>
+      <div class="foot-h" data-i18n="footer.supportTitle">Support tabia</div>
+      <p class="foot-mini" data-i18n="footer.supportSub">If tabia helps you, a tip keeps it free and open.</p>
       <div class="donate" id="donate"></div>
     </div>
   </div>
@@ -338,21 +347,21 @@
 <!-- connect account drawer -->
 <div class="msgcfg" id="connectModal" hidden>
   <div class="msgcfg-card connect-card">
-    <div class="msgcfg-head"><h3>Connect with Lichess</h3><button class="btn ghost sm" id="connectClose">✕ Close</button></div>
-    <p class="small">Sign in with Lichess to save the openings you create to your account. Secure OAuth — no password is ever shared, and everything stays in this browser.</p>
+    <div class="msgcfg-head"><h3 data-i18n="connect.title">Connect with Lichess</h3><button class="btn ghost sm" id="connectClose" data-i18n="settings.close">✕ Close</button></div>
+    <p class="small" data-i18n="connect.body">Sign in with Lichess to save the openings you create to your account. Secure OAuth — no password is ever shared, and everything stays in this browser.</p>
 
     <div class="connect-row">
-      <div class="connect-info"><div class="cl-name"><span class="bi" id="liLogo"></span> Lichess</div><div class="cl-sub">Secure OAuth — one tap, no password.</div></div>
-      <button class="btn primary" id="connectLichess">Connect</button>
+      <div class="connect-info"><div class="cl-name"><span class="bi" id="liLogo"></span> Lichess</div><div class="cl-sub" data-i18n="connect.lichessSub">Secure OAuth — one tap, no password.</div></div>
+      <button class="btn primary" id="connectLichess" data-i18n="connect.connectBtn">Connect</button>
     </div>
 
-    <p class="small connect-note">Just want a style read? The <b>Coach</b> works with both Lichess <i>and</i> Chess.com — no sign-in needed.</p>
+    <p class="small connect-note" data-i18n-html="connect.note">Just want a style read? The <b>Coach</b> works with both Lichess <i>and</i> Chess.com — no sign-in needed.</p>
 
     <div class="connect-status" id="connectStatus" hidden></div>
   </div>
 </div>
 
-<script type="module" src="src/app.js?v=50"></script>
+<script type="module" src="src/app.js?v=51"></script>
 <!-- privacy-first analytics (GoatCounter): no cookies, no personal data.
      Claim the code "tabia" at goatcounter.com for this to start collecting. -->
 <script data-goatcounter="https://tabia.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>

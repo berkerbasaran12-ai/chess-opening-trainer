@@ -1,21 +1,21 @@
 // Opening library. Each opening is a "folder"; its lines are the branches.
 // Add a new opening by importing its module and pushing it here.
-import { repertoire as bdg } from './bdg.js?v=50';
-import { repertoire as jobava } from './jobava.js?v=50';
-import { repertoire as budapest } from './budapest.js?v=50';
-import { repertoire as qg } from './queensgambit.js?v=50';
-import { repertoire as ruylopez } from './ruylopez.js?v=50';
-import { repertoire as italian } from './italian.js?v=50';
-import { repertoire as sicilian } from './sicilian.js?v=50';
-import { repertoire as french } from './french.js?v=50';
-import { repertoire as carokann } from './carokann.js?v=50';
-import { repertoire as alien } from './alien.js?v=50';
-import { repertoire as benoni } from './benoni.js?v=50';
-import { repertoire as oldbenoni } from './benonigambit.js?v=50';
-import { repertoire as scotchgambit } from './scotchgambit.js?v=50';
-import { repertoire as viennagambit } from './viennagambit.js?v=50';
-import { repertoire as kingsindian } from './kingsindian.js?v=50';
-import { repertoire as pirc } from './pirc.js?v=50';
+import { repertoire as bdg } from './bdg.js?v=51';
+import { repertoire as jobava } from './jobava.js?v=51';
+import { repertoire as budapest } from './budapest.js?v=51';
+import { repertoire as qg } from './queensgambit.js?v=51';
+import { repertoire as ruylopez } from './ruylopez.js?v=51';
+import { repertoire as italian } from './italian.js?v=51';
+import { repertoire as sicilian } from './sicilian.js?v=51';
+import { repertoire as french } from './french.js?v=51';
+import { repertoire as carokann } from './carokann.js?v=51';
+import { repertoire as alien } from './alien.js?v=51';
+import { repertoire as benoni } from './benoni.js?v=51';
+import { repertoire as oldbenoni } from './benonigambit.js?v=51';
+import { repertoire as scotchgambit } from './scotchgambit.js?v=51';
+import { repertoire as viennagambit } from './viennagambit.js?v=51';
+import { repertoire as kingsindian } from './kingsindian.js?v=51';
+import { repertoire as pirc } from './pirc.js?v=51';
 
 export const openings = [bdg, scotchgambit, viennagambit, jobava, budapest, alien, oldbenoni, benoni, qg, ruylopez, italian, sicilian, french, carokann, kingsindian, pirc];
 
@@ -30,9 +30,9 @@ export const CATEGORIES = ['Gambits', 'Classical', 'Defences', 'Systems'];
 
 // fallback labels for openings that don't carry their own group metadata
 export const groupMeta = {
-  accepted: { label: 'Accepted', blurb: 'Black takes the pawn' },
-  ryder:    { label: 'Ryder',    blurb: 'The double-pawn gambit' },
-  declined: { label: 'Declined', blurb: 'Black gives the pawn back' },
+  accepted: { label: 'Accepted', blurb: 'Black takes the pawn', labelTr: 'Kabul', blurbTr: 'Siyah piyonu alır' },
+  ryder:    { label: 'Ryder',    blurb: 'The double-pawn gambit', labelTr: 'Ryder', blurbTr: 'Çift piyon gambiti' },
+  declined: { label: 'Declined', blurb: 'Black gives the pawn back', labelTr: 'Red', blurbTr: 'Siyah piyonu geri verir' },
 };
 
 export function openingById(id) { return openings.find(o => o.id === id); }

@@ -1,26 +1,39 @@
-import { Chess } from './vendor/chess.js?v=50';
-import { Board } from './board.js?v=50';
-import { openings, groupsOf, CATEGORIES } from './data/index.js?v=50';
-import { Store } from './store.js?v=50';
-import { evaluate, winPct, fmtEval } from './eval.js?v=50';
-import { coachSay, MSG_FIELDS, messagesFor, saveMessages } from './coach.js?v=50';
-import { Sound } from './sound.js?v=50';
-import { Auth } from './auth.js?v=50';
-import { ICON, siteIcon } from './icons.js?v=50';
-import { Engine } from './engine.js?v=50';
-import { CoachAI } from './coachai.js?v=50';
-import { renderShareCard, downloadCard, shareCardImage } from './sharecard.js?v=50';
+import { Chess } from './vendor/chess.js?v=51';
+import { Board } from './board.js?v=51';
+import { openings, groupsOf, CATEGORIES } from './data/index.js?v=51';
+import { Store } from './store.js?v=51';
+import { evaluate, winPct, fmtEval } from './eval.js?v=51';
+import { coachSay, MSG_FIELDS, messagesFor, saveMessages } from './coach.js?v=51';
+import { Sound } from './sound.js?v=51';
+import { Auth } from './auth.js?v=51';
+import { ICON, siteIcon } from './icons.js?v=51';
+import { Engine } from './engine.js?v=51';
+import { CoachAI } from './coachai.js?v=51';
+import { renderShareCard, downloadCard, shareCardImage } from './sharecard.js?v=51';
+import { t, getLang, setLang } from './i18n.js?v=51';
 
 let repo = openings[0];             // the opening currently loaded in the study hub
 let currentOpening = openings[0];
 const userColor = () => (repo.color === 'b' ? 'b' : 'w');
 const userOrient = () => (userColor() === 'b' ? 'black' : 'white');
 
-const REPO_URL = 'https://github.com/daxaur/tabia';
+const REPO_URL = 'https://github.com/berkerbasaran12-ai/chess-opening-trainer';
 const $ = s => document.querySelector(s);
 const norm = s => s.replace(/[+#!?]/g, '');
+const L = () => getLang();
+// translation-aware accessors for opening data (falls back to English when no *Tr field exists)
+const dName = op => (L() === 'tr' && op.nameTr) || op.name;
+const dOneLiner = op => (L() === 'tr' && op.oneLinerTr) || op.oneLiner || '';
+const dLineName = line => (L() === 'tr' && line.nameTr) || line.name;
+const dIdea = line => (L() === 'tr' && line.ideaTr) || line.idea || '';
+const dComment = (line, idx) => { const c = L() === 'tr' ? line.movesTr?.[idx] : null; return c || line.moves[idx]?.[1] || ''; };
+const dGroupLabel = g => (L() === 'tr' && g.labelTr) || g.label;
+const dGroupBlurb = g => (L() === 'tr' && g.blurbTr) || g.blurb;
+const dMessages = line => (L() === 'tr' && line.messagesTr) || line.messages;
+const dOffBook = op => (L() === 'tr' && op.offBookTr) || op.offBook;
+const CAT_TR = { All: 'Tümü', Gambits: 'Gambitler', Classical: 'Klasik', Defences: 'Savunmalar', Systems: 'Sistemler', Yours: 'Seninkiler' };
+const catLabel = c => (L() === 'tr' ? (CAT_TR[c] || c) : c);
 const groupPill = g => ({ accepted: 'acc', declined: 'dec', ryder: 'ryd' }[g] || '');
-const groupLabel = g => ({ accepted: 'Accepted', declined: 'Declined', ryder: 'Ryder' }[g] || g);
 
 document.getElementById('ghlink').href = REPO_URL;
 $('#footGh').href = REPO_URL;
@@ -41,6 +54,29 @@ $('#homeCreateIcon').innerHTML = ICON.plus;
 $('#brandHome').onclick = () => showView('home');
 $('#createCta').onclick = () => showView('create');
 $('#homeCreate').onclick = () => showView('create');
+
+// ---------- i18n: apply the dictionary to every static-marked node, + language switch ----------
+function applyI18n() {
+  document.documentElement.lang = L();
+  document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = t(el.dataset.i18n); });
+  document.querySelectorAll('[data-i18n-html]').forEach(el => { el.innerHTML = t(el.dataset.i18nHtml); });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => { el.placeholder = t(el.dataset.i18nPlaceholder); });
+  document.querySelectorAll('[data-i18n-title]').forEach(el => { el.title = t(el.dataset.i18nTitle); });
+  const btn = $('#langBtn'); if (btn) btn.textContent = L() === 'tr' ? 'EN' : 'TR';
+  document.querySelectorAll('#langSeg button').forEach(b => b.classList.toggle('active', b.dataset.lang === L()));
+}
+function switchLang(l) {
+  setLang(l); applyI18n();
+  // re-render everything that was built with the previous language baked in
+  renderHome();
+  if ($('#view-saved').classList.contains('active')) renderSaved();
+  if ($('#view-opening').classList.contains('active')) renderOpening();
+  if ($('#view-train').classList.contains('active')) { buildScope(); refreshMastery(); setMode(drill.mode); setLineHeader2(); renderMoves(); }
+}
+function setLineHeader2() { if (drill.line) setLineHeader(drill.line); }
+$('#langBtn').onclick = () => switchLang(L() === 'tr' ? 'en' : 'tr');
+document.querySelectorAll('#langSeg button').forEach(b => b.onclick = () => switchLang(b.dataset.lang));
+applyI18n();
 
 // ---------- animated dot-matrix wordmark ----------
 function dotWordmark(canvas, text, dotMax) {
@@ -125,14 +161,14 @@ document.querySelectorAll('#soundSeg button').forEach(b => b.onclick = () => {
 function renderAccount() {
   const a = Auth.current();
   $('#connectIcon').innerHTML = a ? siteIcon(a.site) : ICON.link;
-  $('#connectLabel').textContent = a ? a.username : 'Connect';
+  $('#connectLabel').textContent = a ? a.username : t('nav.connect');
   $('#connectBtn').classList.toggle('linked', !!a);
   const st = $('#connectStatus');
   if (a) {
     st.hidden = false;
     st.innerHTML = `<div class="cs-on"><span class="bi">${siteIcon(a.site)}</span> <b>${a.username}</b> · ${a.site === 'lichess' ? 'Lichess' : 'Chess.com'}${a.rating ? ' · ' + a.rating : ''}
-      <a href="${a.url}" target="_blank" class="cs-link">view profile ↗</a></div>
-      <button class="btn ghost sm" id="connectDisc">Disconnect</button>`;
+      <a href="${a.url}" target="_blank" class="cs-link">${t('connect.viewProfile')}</a></div>
+      <button class="btn ghost sm" id="connectDisc">${t('connect.disconnect')}</button>`;
     $('#connectDisc').onclick = () => { Auth.disconnect(); renderAccount(); };
   } else { st.hidden = true; st.innerHTML = ''; }
   // keep the Create gate in sync if the user (dis)connects while it's open
@@ -154,13 +190,13 @@ document.querySelectorAll('#coachSite button').forEach(b => b.onclick = () => {
 let sampleDrawn = false;
 function drawSample() {
   if (sampleDrawn) return; sampleDrawn = true;
-  renderShareCard($('#sampleCanvas'), {
-    handle: 'you', site: 'lichess', styleLabel: 'Aggressive',
-    styleSub: 'You go for the throat — sharp lines, quick contact.',
+  renderShareCard($('#sampleCanvas'), cardLabels({
+    handle: 'you', site: 'lichess', styleLabel: t('coach.style.aggressive'),
+    styleSub: t('coach.style.aggressiveSub'),
     d1: 'e4', winRate: 57, avgMoves: 31, n: 80,
-    white: { label: 'As White', name: 'Italian Game' },
-    black: { label: 'As Black', name: 'Sicilian Defence' },
-  });
+    white: { label: t('coach.asWhite'), name: 'Italian Game' },
+    black: { label: t('coach.asBlack'), name: 'Sicilian Defence' },
+  }));
 }
 function enterCoach() {
   const a = Auth.current();
@@ -174,11 +210,11 @@ function enterCoach() {
 function coachStatus(msg, cls) { const s = $('#coachStatus'); s.textContent = msg; s.className = 'coach-status ' + (cls || ''); }
 async function runCoach() {
   const user = $('#coachUser').value.trim();
-  if (!user) { coachStatus('Enter your username first.', 'err'); return; }
-  coachStatus('Reading your recent games…', 'busy'); $('#coachResult').hidden = true; $('#coachGo').disabled = true;
+  if (!user) { coachStatus(t('coach.enterUsername'), 'err'); return; }
+  coachStatus(t('coach.reading'), 'busy'); $('#coachResult').hidden = true; $('#coachGo').disabled = true;
   $('#coachWizard').classList.add('busy');
   try { const p = await CoachAI.profile(coachSite, user); coachStatus('', ''); $('#coachWizard').hidden = true; renderCoachResult(p); }
-  catch (e) { coachStatus(e.message || 'Couldn’t analyse that account.', 'err'); }
+  catch (e) { coachStatus(e.message || t('coach.couldntAnalyse'), 'err'); }
   $('#coachWizard').classList.remove('busy');
   $('#coachGo').disabled = false;
 }
@@ -196,53 +232,54 @@ function recRow(rec, side) {
   return `<button class="recrow" data-study="${op.id}">
     <span class="recrow-side">${side === 'w' ? '♔' : '♚'}</span>
     <span class="recrow-body">
-      <span class="recrow-label">As ${side === 'w' ? 'White' : 'Black'}${op.tabiaOriginal ? ' · ★ original' : ''}</span>
-      <span class="recrow-name">${op.name}</span>
-      <span class="recrow-one">${op.oneLiner || ''}</span>
+      <span class="recrow-label">${side === 'w' ? t('coach.asWhite') : t('coach.asBlack')}${op.tabiaOriginal ? t('coach.original') : ''}</span>
+      <span class="recrow-name">${dName(op)}</span>
+      <span class="recrow-one">${dOneLiner(op)}</span>
     </span>
-    <span class="recrow-go">Study ▸</span>
+    <span class="recrow-go">${t('coach.study')}</span>
   </button>`;
 }
 
-const STYLE_SUB = {
-  aggressive: 'You go for the throat — sharp lines, quick contact.',
-  positional: 'You build slowly and grind — structure over fireworks.',
-};
+function cardLabels(data) {   // static sharecard canvas labels, translated
+  return { ...data, kicker: t('sc.kicker'), winLabel: t('sc.win'), avgLabel: t('sc.avg'), whatToPlay: t('sc.whatToPlay'), cta: t('sc.cta'),
+    movesSuffix: t('sc.movesSuffix'), gamesSuffix: t('sc.gamesSuffix') };
+}
 function renderCoachResult(p) {
-  const styleLabel = p.aggressive ? 'Aggressive' : 'Positional';
+  const styleLabel = p.aggressive ? t('coach.style.aggressive') : t('coach.style.positional');
+  const styleSub = p.aggressive ? t('coach.style.aggressiveSub') : t('coach.style.positionalSub');
   const wOp = library().find(o => o.id === p.rec.white?.id);
   const bOp = library().find(o => o.id === p.rec.black?.id);
-  const tweet = encodeURIComponent(`tabia read my games — I play ${styleLabel.toLowerCase()}, so it picked the ${wOp?.name || 'right opening'} for me ♟️`);
+  const tweet = encodeURIComponent(`tabia read my games — I play ${styleLabel.toLowerCase()}, so it picked the ${wOp ? dName(wOp) : 'right opening'} for me ♟️`);
 
   $('#coachResult').hidden = false;
   $('#coachResult').innerHTML = `
     <div class="result-head">
-      <span class="rh-kicker">✦ your style read · @${p.username}</span>
-      <button class="btn ghost sm" id="coachAgain">↻ Analyse another</button>
+      <span class="rh-kicker">${t('coach.resultKicker', { user: p.username })}</span>
+      <button class="btn ghost sm" id="coachAgain">${t('coach.again')}</button>
     </div>
     <div class="cardwrap">
       <div class="sharecard pop"><canvas id="coachCanvas" aria-label="Your tabia style card"></canvas></div>
     </div>
     <div class="cardacts">
-      <button class="btn share" id="coachShare">𝕏 Share on X</button>
-      <button class="btn ghost" id="coachDl">⤓ Download card</button>
+      <button class="btn share" id="coachShare">${t('coach.shareX')}</button>
+      <button class="btn ghost" id="coachDl">${t('coach.download')}</button>
     </div>
-    <div class="recs-lead">Two openings matched to you — drill them now</div>
+    <div class="recs-lead">${t('coach.recsLead')}</div>
     <div class="recrows">${recRow(p.rec.white, 'w')}${recRow(p.rec.black, 'b')}</div>`;
 
   $('#coachResult').querySelectorAll('[data-study]').forEach(b => b.onclick = () => openOpening(b.dataset.study));
   $('#coachAgain').onclick = coachReset;
 
   const canvas = $('#coachCanvas');
-  const cardData = {
-    handle: p.username, site: p.site, styleLabel, styleSub: STYLE_SUB[styleLabel.toLowerCase()],
+  const cardData = cardLabels({
+    handle: p.username, site: p.site, styleLabel, styleSub,
     d1: p.whiteD1, winRate: p.winRate, avgMoves: p.avgMoves, n: p.n,
-    white: wOp ? { label: 'As White', name: wOp.name } : null,
-    black: bOp ? { label: 'As Black', name: bOp.name } : null,
-  };
+    white: wOp ? { label: t('coach.asWhite'), name: dName(wOp) } : null,
+    black: bOp ? { label: t('coach.asBlack'), name: dName(bOp) } : null,
+  });
   renderShareCard(canvas, cardData);
 
-  const tweetUrl = `https://twitter.com/intent/tweet?text=${tweet}&url=https%3A%2F%2Fdaxaur.github.io%2Ftabia%2F`;
+  const tweetUrl = `https://twitter.com/intent/tweet?text=${tweet}&url=https%3A%2F%2Fchess.marbasa.com%2F`;
   $('#coachShare').onclick = async () => {
     const shared = await shareCardImage(canvas, decodeURIComponent(tweet), p.username);
     if (!shared) window.open(tweetUrl, '_blank', 'noopener');
@@ -284,17 +321,17 @@ const library = () => [...openings, ...Store.customOpenings()];
 function opCardHtml(op, i, pfx) {
   const s = statsFor(op); const pct = s.ids.length ? Math.round(s.mastered / s.ids.length * 100) : 0;
   const starN = op.lines.filter(l => l.star).length;
-  const ribbon = op.tabiaOriginal ? '<div class="op-ribbon">★ TABIA ORIGINAL</div>' : op.custom ? '<div class="op-ribbon yours">YOURS</div>' : '';
+  const ribbon = op.tabiaOriginal ? `<div class="op-ribbon">${t('lib.badge.original')}</div>` : op.custom ? `<div class="op-ribbon yours">${t('lib.badge.yours')}</div>` : '';
   return `<div class="opcard" data-op="${op.id}" style="animation-delay:${i * 70}ms">
     ${ribbon}
-    <button class="opfav${Store.isFavorite(op.id) ? ' on' : ''}" data-fav="${op.id}" title="Save opening">${ICON.star}<span class="opfav-n">${starN}</span></button>
+    <button class="opfav${Store.isFavorite(op.id) ? ' on' : ''}" data-fav="${op.id}" title="${t('opening.saveBtn')}">${ICON.star}<span class="opfav-n">${starN}</span></button>
     <div class="opcard-board"><div id="${pfx}-${op.id}"></div></div>
     <div class="opcard-body">
-      <span class="ct">${op.eco} · ${op.lines.length} lines${s.due ? ` · <b>${s.due} due</b>` : ''}</span>
-      <h3>${op.name}</h3>
-      <p>${op.oneLiner || ''}</p>
+      <span class="ct">${t('lib.ecoLines', { eco: op.eco, n: op.lines.length })}${s.due ? ` · <b>${t('lib.due', { n: s.due })}</b>` : ''}</span>
+      <h3>${dName(op)}</h3>
+      <p>${dOneLiner(op)}</p>
       <div class="bar"><i style="width:${pct}%"></i></div>
-      <span class="go">${pct ? `${pct}% mastered` : 'Start training'} →</span>
+      <span class="go">${pct ? t('lib.mastered', { pct }) : t('lib.startTraining')}</span>
     </div></div>`;
 }
 function updateSavedCount() {
@@ -314,13 +351,13 @@ function renderFilter() {
   const present = CATEGORIES.filter(c => library().some(o => o.category === c));
   const cats = ['All', ...present, ...(Store.customOpenings().length ? ['Yours'] : [])];
   if (!cats.includes(libCat)) libCat = 'All';
-  $('#libFilter').innerHTML = cats.map(c => `<button class="fchip${c === libCat ? ' on' : ''}" data-cat="${c}">${c}</button>`).join('');
+  $('#libFilter').innerHTML = cats.map(c => `<button class="fchip${c === libCat ? ' on' : ''}" data-cat="${c}">${catLabel(c)}</button>`).join('');
   $('#libFilter').querySelectorAll('[data-cat]').forEach(b => b.onclick = () => { libCat = b.dataset.cat; renderHome(); });
 }
 let libSearch = '';
 function matchesSearch(op, q) {
   if (!q) return true;
-  const hay = `${op.name} ${op.eco || ''} ${op.oneLiner || ''} ${(op.lines || []).map(l => l.name).join(' ')}`.toLowerCase();
+  const hay = `${dName(op)} ${op.eco || ''} ${dOneLiner(op)} ${(op.lines || []).map(l => dLineName(l)).join(' ')}`.toLowerCase();
   return q.split(/\s+/).every(term => hay.includes(term));   // all terms must match
 }
 function renderHome() {
@@ -331,16 +368,16 @@ function renderHome() {
   if (libCat !== 'All') lib = lib.filter(o => libCat === 'Yours' ? o.custom : o.category === libCat);
   const q = libSearch.trim().toLowerCase();
   if (q) lib = lib.filter(o => matchesSearch(o, q));
-  const label = q ? `${lib.length} match${lib.length === 1 ? '' : 'es'} for “${libSearch.trim()}”`
-                  : `${lib.length} opening${lib.length === 1 ? '' : 's'}${libCat !== 'All' ? ' · ' + libCat.toLowerCase() : ' · drill any line'}`;
+  const label = q ? t('lib.sub.search', { n: lib.length, es: lib.length === 1 ? '' : 'es', q: libSearch.trim() })
+                  : t('lib.sub.all', { n: lib.length, s: lib.length === 1 ? '' : 's', cat: libCat !== 'All' ? t('lib.sub.catSuffix', { cat: catLabel(libCat) }) : '' });
   $('#libSub').textContent = label;
   $('#library').innerHTML = lib.map((op, i) => opCardHtml(op, i, 'mini')).join('');
   lib.forEach(op => previewBoard(document.getElementById(`mini-${op.id}`), op, 7));
   wireCards($('#library'));
   const empty = $('#libEmpty');
-  if (empty) { empty.hidden = lib.length > 0; empty.textContent = lib.length ? '' : (q ? `No openings match “${libSearch.trim()}”. Try a different term — or create your own.` : 'No openings here yet.'); }
+  if (empty) { empty.hidden = lib.length > 0; empty.textContent = lib.length ? '' : (q ? t('lib.empty.search', { q: libSearch.trim() }) : t('lib.empty.none')); }
   const s0 = statsFor(repo);
-  $('#footStats').textContent = `${s0.reps} reps logged · ${s0.mastered}/${s0.ids.length} lines mastered`;
+  $('#footStats').textContent = t('lib.footStats', { reps: s0.reps, mastered: s0.mastered, total: s0.ids.length });
 }
 {
   const si = $('#libSearch');
@@ -350,10 +387,10 @@ function renderHome() {
 }
 function renderSaved() {
   const a = Auth.current();
-  $('#savedWho').textContent = a ? `${a.username}’s openings` : 'Your saved openings';
+  $('#savedWho').textContent = a ? t('saved.who', { user: a.username }) : t('saved.whoDefault');
   const favs = library().filter(o => Store.isFavorite(o.id));
   $('#savedLib').innerHTML = favs.length ? favs.map((op, i) => opCardHtml(op, i, 'smini')).join('')
-    : '<div class="saved-empty">No saved openings yet. Tap the ★ on any opening to keep it here.</div>';
+    : `<div class="saved-empty">${t('saved.empty')}</div>`;
   favs.forEach(op => previewBoard(document.getElementById(`smini-${op.id}`), op, 7));
   wireCards($('#savedLib'));
 }
@@ -364,16 +401,16 @@ function openingById2(id) { return library().find(o => o.id === id); }
 function openOpening(id) { currentOpening = openingById2(id) || openings[0]; showView('opening'); }
 function renderOpening() {
   const op = currentOpening;
-  $('#crumbName').textContent = op.name;
-  $('#opEco').innerHTML = `${op.tabiaOriginal ? '<span class="op-badge">★ tabia original</span> ' : op.custom ? '<span class="op-badge yours">yours</span> ' : ''}${op.eco} · plays ${op.color === 'b' ? 'Black' : 'White'}`;
-  $('#opName').textContent = op.name;
-  $('#opOneliner').textContent = op.oneLiner || '';
+  $('#crumbName').textContent = dName(op);
+  $('#opEco').innerHTML = `${op.tabiaOriginal ? `<span class="op-badge">${t('opening.badgeOriginal')}</span> ` : op.custom ? `<span class="op-badge yours">${t('opening.badgeYours')}</span> ` : ''}${op.eco} · ${op.color === 'b' ? t('opening.playsBlack') : t('opening.playsWhite')}`;
+  $('#opName').textContent = dName(op);
+  $('#opOneliner').textContent = dOneLiner(op);
   const fav = Store.isFavorite(op.id);
-  $('.op-actions').innerHTML = `<button class="btn primary" id="opTrain">▶ Study this opening</button>` +
-    `<button class="btn${fav ? ' saved' : ''}" id="opFav">${fav ? '★ Saved' : '☆ Save'}</button>` +
-    (op.custom ? `<button class="btn" id="opEdit">✎ Edit</button><button class="btn ghost" id="opDelete">🗑 Delete</button>` : '');
+  $('.op-actions').innerHTML = `<button class="btn primary" id="opTrain">${t('opening.studyBtn')}</button>` +
+    `<button class="btn${fav ? ' saved' : ''}" id="opFav">${fav ? t('opening.savedBtn') : t('opening.saveBtn')}</button>` +
+    (op.custom ? `<button class="btn" id="opEdit">${t('opening.editBtn')}</button><button class="btn ghost" id="opDelete">${t('opening.deleteBtn')}</button>` : '');
   $('#opTrain').onclick = () => showView('train');
-  $('#opFav').onclick = () => { const on = Store.toggleFavorite(op.id); $('#opFav').textContent = on ? '★ Saved' : '☆ Save'; $('#opFav').classList.toggle('saved', on); updateSavedCount(); };
+  $('#opFav').onclick = () => { const on = Store.toggleFavorite(op.id); $('#opFav').textContent = on ? t('opening.savedBtn') : t('opening.saveBtn'); $('#opFav').classList.toggle('saved', on); updateSavedCount(); };
   if (op.custom) {
     $('#opEdit').onclick = () => loadIntoBuilder(op);
     $('#opDelete').onclick = () => { Store.deleteCustomOpening(op.id); showView('home'); };
@@ -381,13 +418,13 @@ function renderOpening() {
   $('#opBoard').innerHTML = ''; opPreview = previewBoard($('#opBoard'), op, 9);
   $('#opTree').innerHTML = groupsOf(op).map(grp => `
     <div class="folder" data-folder="${grp.key}">
-      <div class="fhead"><span class="fchev">▸</span> ${grp.label} <span class="cnt">${grp.lines.length} lines · ${grp.blurb}</span></div>
+      <div class="fhead"><span class="fchev">▸</span> ${dGroupLabel(grp)} <span class="cnt">${t('opening.linesBlurb', { n: grp.lines.length, blurb: dGroupBlurb(grp) })}</span></div>
       <div class="fbody">${grp.lines.map(l => {
         const box = Store.mastery(op.id, l.id), due = Store.isDue(op.id, l.id);
         const fm = l.moves.slice(0, 8).map((m, i) => i % 2 ? m[0] : `${Math.floor(i / 2) + 1}.${m[0]}`).join(' ');
         return `<div class="branch" data-line="${l.id}">
-          <div><div class="nm">${l.name}</div><div class="mv">${fm}…</div></div>
-          <div class="bend">${due ? '<span class="pill due">due</span>' : ''}<span class="mastery">${'●'.repeat(box) + '○'.repeat(6 - box)}</span></div>
+          <div><div class="nm">${dLineName(l)}</div><div class="mv">${fm}…</div></div>
+          <div class="bend">${due ? `<span class="pill due">${t('stats.due')}</span>` : ''}<span class="mastery">${'●'.repeat(box) + '○'.repeat(6 - box)}</span></div>
         </div>`;}).join('')}</div>
     </div>`).join('');
   $('#opTree').querySelectorAll('.fhead').forEach(h => h.onclick = () => h.parentElement.classList.toggle('closed'));
@@ -398,12 +435,12 @@ $('#crumbHome').onclick = () => showView('home');
 // ============================== CREATE (opening builder) ==============================
 $('#navCreateIcon').innerHTML = ICON.plus;
 $('#crCrumbHome').onclick = () => showView('home');
-const CB_MSGS = [
-  { key: 'correct',  label: 'On a correct move' },
-  { key: 'wrong',    label: 'On a wrong move  ({exp} = the right move)' },
-  { key: 'done',     label: 'Line finished clean' },
-  { key: 'doneMiss', label: 'Line finished with a slip' },
-];
+function CB_MSGS() { return [
+  { key: 'correct',  label: t('create.msgCorrect') },
+  { key: 'wrong',    label: t('create.msgWrong') },
+  { key: 'done',     label: t('create.msgDone') },
+  { key: 'doneMiss', label: t('create.msgDoneMiss') },
+]; }
 const cb = { board: null, game: new Chess(), color: 'w', lines: [], editingId: null, stepMeta: {}, selStep: null };
 
 function enterCreate() {
@@ -414,9 +451,9 @@ function enterCreate() {
   if (!authed) return;
   if (!cb.board) {
     cb.board = new Board($('#crBoard'), { pieceSet, onMove: cbMove });
-    $('#crMsgBox').innerHTML = CB_MSGS.map(f =>
+    $('#crMsgBox').innerHTML = CB_MSGS().map(f =>
       `<div class="mf"><label>${f.label}</label><textarea data-cm="${f.key}" rows="2" placeholder="one message per line"></textarea></div>`).join('');
-    $('#crMsgToggle').onclick = () => { const b = $('#crMsgBox'); b.hidden = !b.hidden; $('#crMsgToggle').textContent = b.hidden ? '＋ Line-wide coach messages' : '− Hide line messages'; };
+    $('#crMsgToggle').onclick = () => { const b = $('#crMsgBox'); b.hidden = !b.hidden; $('#crMsgToggle').textContent = b.hidden ? t('create.lineMsgToggle') : t('create.lineMsgHide'); };
     document.querySelectorAll('#crColor button').forEach(b => b.onclick = () => setCbColor(b.dataset.c));
     $('#crUndo').onclick = () => { delete cb.stepMeta[cb.game.history().length - 1]; cb.game.undo(); cb.selStep = null; cbSetBoard(); };
     $('#crResetLine').onclick = () => { cb.game = new Chess(); cb.stepMeta = {}; cb.selStep = null; cbSetBoard(); };
@@ -424,7 +461,7 @@ function enterCreate() {
     $('#crAddLine').onclick = cbAddLine;
     $('#crSave').onclick = cbSave;
     $('#crCancel').onclick = () => { cbReset(); showView('home'); };
-    $('#crPgnToggle').onclick = () => { const b = $('#crPgnBox'); b.hidden = !b.hidden; $('#crPgnToggle').textContent = b.hidden ? '⇪ Import from PGN' : '− Hide PGN import'; if (!b.hidden) $('#crPgnText').focus(); };
+    $('#crPgnToggle').onclick = () => { const b = $('#crPgnBox'); b.hidden = !b.hidden; $('#crPgnToggle').textContent = b.hidden ? t('create.importPgn') : t('create.hidePgn'); if (!b.hidden) $('#crPgnText').focus(); };
     $('#crPgnImport').onclick = cbImportPgn;
   }
   cb.board.setPieceSet(pieceSet);
@@ -449,7 +486,7 @@ function cbSetBoard() {
 }
 function cbRenderMoves() {
   const h = cb.game.history({ verbose: true });
-  if (!h.length) { $('#crMoves').innerHTML = '<span class="mvempty">play the moves on the board…</span>'; $('#crStep').hidden = true; return; }
+  if (!h.length) { $('#crMoves').innerHTML = `<span class="mvempty">${t('create.movesEmpty')}</span>`; $('#crStep').hidden = true; return; }
   let html = '';
   for (let i = 0; i < h.length; i++) {
     const m = h[i];
@@ -468,14 +505,14 @@ function openStep(i) {
   const sm = cb.stepMeta[i] || {};
   $('#crStep').hidden = false;
   $('#crStep').innerHTML = `
-    <div class="cr-step-head">Move ${Math.floor(i / 2) + 1}${i % 2 ? '…' : '.'} <b>${san}</b> — this step
+    <div class="cr-step-head">${t('create.step', { n: Math.floor(i / 2) + 1, dots: i % 2 ? '…' : '.', san })}
       <button class="cr-step-x" id="crStepX">✕</button></div>
-    <input id="crStepComment" placeholder="Comment shown when this move is played" value="${(sm.comment || '').replace(/"/g, '&quot;')}">
-    <label>Custom “correct” lines (one per line)</label>
-    <textarea id="crStepCorrect" rows="2" placeholder="overrides the line/global message">${(sm.correct || []).join('\n')}</textarea>
-    <label>Custom “wrong” lines (one per line)</label>
-    <textarea id="crStepWrong" rows="2" placeholder="overrides the line/global message">${(sm.wrong || []).join('\n')}</textarea>
-    <div class="cr-step-act"><button class="btn primary sm" id="crStepSave">Save this step</button><button class="btn ghost sm" id="crStepClear">Clear</button></div>`;
+    <input id="crStepComment" placeholder="${t('create.stepComment')}" value="${(sm.comment || '').replace(/"/g, '&quot;')}">
+    <label>${t('create.correctLines')}</label>
+    <textarea id="crStepCorrect" rows="2" placeholder="${t('create.overrides')}">${(sm.correct || []).join('\n')}</textarea>
+    <label>${t('create.wrongLines')}</label>
+    <textarea id="crStepWrong" rows="2" placeholder="${t('create.overrides')}">${(sm.wrong || []).join('\n')}</textarea>
+    <div class="cr-step-act"><button class="btn primary sm" id="crStepSave">${t('create.saveStep')}</button><button class="btn ghost sm" id="crStepClear">${t('create.clear')}</button></div>`;
   $('#crStepX').onclick = () => { cb.selStep = null; $('#crStep').hidden = true; cbRenderMoves(); };
   $('#crStepSave').onclick = () => {
     const meta = {};
@@ -483,14 +520,14 @@ function openStep(i) {
     const ok = $('#crStepCorrect').value.split('\n').map(s => s.trim()).filter(Boolean); if (ok.length) meta.correct = ok;
     const wr = $('#crStepWrong').value.split('\n').map(s => s.trim()).filter(Boolean); if (wr.length) meta.wrong = wr;
     if (Object.keys(meta).length) cb.stepMeta[i] = meta; else delete cb.stepMeta[i];
-    cb.selStep = null; $('#crStep').hidden = true; cbRenderMoves(); cbStatus('Step saved.', 'ok');
+    cb.selStep = null; $('#crStep').hidden = true; cbRenderMoves(); cbStatus(t('settings.messagesSaved'), 'ok');
   };
   $('#crStepClear').onclick = () => { delete cb.stepMeta[i]; cb.selStep = null; $('#crStep').hidden = true; cbRenderMoves(); };
 }
 function cbStatus(msg, cls = '') { const s = $('#crStatus'); s.textContent = msg; s.className = 'cr-status ' + cls; }
 function cbAddLine() {
   const moves = cb.game.history();
-  if (!moves.length) { cbStatus('Play at least one move for this line.', 'err'); return; }
+  if (!moves.length) { cbStatus(t('create.playFirst'), 'err'); return; }
   const name = $('#crLineName').value.trim() || `Line ${cb.lines.length + 1}`;
   const group = $('#crLineGroup').value.trim() || 'Main';
   const idea = $('#crLineIdea').value.trim();
@@ -512,7 +549,7 @@ function cbAddLine() {
   cb.game = new Chess(); cb.stepMeta = {}; cb.selStep = null; cbSetBoard();
   $('#crLineName').value = ''; $('#crLineIdea').value = '';
   $('#crMsgBox').querySelectorAll('textarea').forEach(t => t.value = '');
-  cbRenderLines(); cbStatus(`Added “${name}”.`, 'ok');
+  cbRenderLines(); cbStatus(t('create.added', { name }), 'ok');
 }
 // ---- import lines from a pasted PGN (one game = one line) ----
 function splitPgnGames(text) {
@@ -528,12 +565,12 @@ function pgnLineName(pgn, n) {
   if (opening && opening !== '?') return opening;
   const w = tag(/\[White\s+"([^"]+)"/), b = tag(/\[Black\s+"([^"]+)"/);
   if ((w && w !== '?') || (b && b !== '?')) return `${w || '?'} – ${b || '?'}`;
-  return `Imported line ${n}`;
+  return t('create.importedLine', { n });
 }
 function cbImportPgn() {
   const raw = $('#crPgnText').value;
   const games = splitPgnGames(raw);
-  if (!games.length) { cbStatus('Paste a PGN first.', 'err'); return; }
+  if (!games.length) { cbStatus(t('create.pgnFail'), 'err'); return; }
   let added = 0, skipped = 0;
   for (const g of games) {
     let hist;
@@ -548,8 +585,8 @@ function cbImportPgn() {
   cbRenderLines();
   if (added) {
     $('#crPgnText').value = '';
-    cbStatus(`Imported ${added} line${added > 1 ? 's' : ''}${skipped ? ` (${skipped} skipped)` : ''}.`, 'ok');
-  } else cbStatus('Couldn’t read any games from that PGN — check the format.', 'err');
+    cbStatus(t('create.imported', { n: added, s: added > 1 ? 's' : '', skipped: skipped ? t('create.importedSkipped', { n: skipped }) : '' }), 'ok');
+  } else cbStatus(t('create.pgnFail'), 'err');
 }
 
 function cbRenderLines() {
@@ -558,13 +595,13 @@ function cbRenderLines() {
     `<div class="cr-li"><div class="cr-li-info"><b>${l.name}</b> <span class="cr-li-g">${l.group}</span>
        <div class="cr-li-m">${l.moves.map((m, j) => (j % 2 ? '' : (j / 2 | 0) + 1 + '.') + m[0]).join(' ')}</div></div>
      <button class="cr-del" data-i="${i}" title="Remove line">${ICON.trash}</button></div>`).join('')
-    : '<div class="cr-empty">No lines yet — build one on the board, then “Add this line”.</div>';
+    : `<div class="cr-empty">${t('create.linesEmpty')}</div>`;
   $('#crLines').querySelectorAll('.cr-del').forEach(b => b.onclick = () => { cb.lines.splice(+b.dataset.i, 1); cbRenderLines(); });
 }
 function cbSave() {
   const name = $('#crName').value.trim();
-  if (!name) { cbStatus('Give your opening a name.', 'err'); return; }
-  if (!cb.lines.length) { cbStatus('Add at least one line first.', 'err'); return; }
+  if (!name) { cbStatus(t('create.nameRequired'), 'err'); return; }
+  if (!cb.lines.length) { cbStatus(t('create.lineRequired'), 'err'); return; }
   const id = cb.editingId || ('custom-' + name.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 22) + '-' + Date.now().toString(36));
   const op = { id, name, color: cb.color, eco: ($('#crEco').value.trim() || 'CUST'), oneLiner: $('#crOne').value.trim(), custom: true, lines: cb.lines };
   Store.saveCustomOpening(op);
@@ -576,25 +613,25 @@ function cbReset() {
   ['crName', 'crEco', 'crOne', 'crLineName', 'crLineGroup', 'crLineIdea'].forEach(id => { const e = $('#' + id); if (e) e.value = ''; });
   if ($('#crStep')) $('#crStep').hidden = true;
   setCbColor('w'); if (cb.board) cbSetBoard(); cbRenderLines(); cbStatus('');
-  $('#crTitle').textContent = 'Create an opening';
+  $('#crTitle').textContent = t('create.crumb');
 }
 function loadIntoBuilder(op) {                 // edit an existing custom opening
   cb.editingId = op.id; cb.lines = JSON.parse(JSON.stringify(op.lines));
   cb.game = new Chess();
   $('#crName').value = op.name; $('#crEco').value = op.eco === 'CUST' ? '' : (op.eco || ''); $('#crOne').value = op.oneLiner || '';
   setCbColor(op.color || 'w');
-  $('#crTitle').textContent = 'Edit · ' + op.name;
+  $('#crTitle').textContent = t('create.editCrumb', { name: op.name });
   showView('create');
 }
 
 // ============================== STUDY HUB (modes + bot + eval + sound) ==============================
 const GLYPH = { p: 'P', n: 'N', b: 'B', r: 'R', q: 'Q', k: 'K' };
-const MODE_META = {
-  learn:    { icon: '📖', name: 'Learn',    intro: 'Learn mode — I’ll walk you through each line. Press Start, then use › / ‹ (or arrow keys) to step.' },
-  practice: { icon: '🎯', name: 'Practice', intro: 'Practice mode — free play, nothing is scored or scheduled. Slip up as many times as you like; just rehearse.' },
-  drill:    { icon: '🥁', name: 'Drill',    intro: 'Drill mode — the scored one. Spaced repetition: get a line clean and it won’t come back for a while.' },
-  hyper:    { icon: '⚡', name: 'Hyper',    intro: 'Hyper mode — I become your opponent and play a random line. Hold your repertoire, then start another round.' },
-};
+function MODE_META() { return {
+  learn:    { icon: '📖', name: t('mode.learn.name'),    intro: t('mode.learn.intro') },
+  practice: { icon: '🎯', name: t('mode.practice.name'), intro: t('mode.practice.intro') },
+  drill:    { icon: '🥁', name: t('mode.drill.name'),    intro: t('mode.drill.intro') },
+  hyper:    { icon: '⚡', name: t('mode.hyper.name'),    intro: t('mode.hyper.intro') },
+}; }
 
 const trBoard = new Board($('#trBoard'), { pieceSet, onMove: trMove });
 let trGame = new Chess();
@@ -616,25 +653,26 @@ function setScope(s) {
 function buildScope() {
   if (!repo.lines.some(l => l.group === drill.scope)) drill.scope = 'all';
   const groups = groupsOf(repo);
-  $('#trScope').innerHTML = `<button data-scope="all" class="${drill.scope === 'all' ? 'active' : ''}">All</button>` +
-    groups.map(g => `<button data-scope="${g.key}" class="${drill.scope === g.key ? 'active' : ''}">${g.label.split('·')[0].trim().slice(0, 8)}</button>`).join('');
+  $('#trScope').innerHTML = `<button data-scope="all" class="${drill.scope === 'all' ? 'active' : ''}">${catLabel('All')}</button>` +
+    groups.map(g => `<button data-scope="${g.key}" class="${drill.scope === g.key ? 'active' : ''}">${dGroupLabel(g).split('·')[0].trim().slice(0, 10)}</button>`).join('');
   $('#trScope').querySelectorAll('button').forEach(b => b.onclick = () => setScope(b.dataset.scope));
 }
 
 function setMode(m) {
   drill.mode = m;
+  const meta = MODE_META();
   document.querySelectorAll('#trModes .modetile').forEach(b => b.classList.toggle('active', b.dataset.mode === m));
-  $('#trModeIcon').textContent = MODE_META[m].icon;
-  $('#trModeName').textContent = MODE_META[m].name;
+  $('#trModeIcon').textContent = meta[m].icon;
+  $('#trModeName').textContent = meta[m].name;
   $('#trRestart').hidden = m !== 'hyper';
   $('#trSkip').hidden = m === 'hyper';
-  $('#trStart').textContent = m === 'hyper' ? '▶ Start round' : '▶ Start';
+  $('#trStart').textContent = m === 'hyper' ? t('train.startRound') : t('train.start');
   $('#linesPanel').style.display = m === 'hyper' ? 'none' : '';   // Hyper picks lines itself
   drill.active = false; drill.line = null; hyper = null;
   resetIdle();
   $('#trLineIdx').textContent = '';
-  $('#trOpName').textContent = repo.name;
-  coach(MODE_META[m].intro);
+  $('#trOpName').textContent = dName(repo);
+  coach(meta[m].intro);
 }
 document.querySelectorAll('#trModes .modetile').forEach(b => b.onclick = () => setMode(b.dataset.mode));
 
@@ -696,8 +734,8 @@ function enterTrain() {
   setMode(drill.mode);
 }
 function setLineHeader(line) {
-  $('#trOpName').textContent = repo.name;
-  $('#trLineIdx').textContent = `#${repo.lines.indexOf(line) + 1} · ${line.name}`;
+  $('#trOpName').textContent = dName(repo);
+  $('#trLineIdx').textContent = `#${repo.lines.indexOf(line) + 1} · ${dLineName(line)}`;
 }
 
 // ---- Learn / Practice / Drill ----
@@ -719,7 +757,7 @@ function beginLine(line) {
   setLineHeader(line); refreshMastery(); updateEval(); renderMoves();
   if (drill.mode === 'learn') {                       // walk the line: drag the next move, or step ‹ ›
     trBoard.setUserColor(null); trBoard.lock(false);
-    coach(coachSay('learn') + ' ' + (line.idea || '')); setArrows(); return;
+    coach(coachSay('learn') + ' ' + dIdea(line)); setArrows(); return;
   }
   // practice / drill — if the trainee is Black, the opponent (White) opens
   if (userColor() === 'b') {
@@ -729,10 +767,10 @@ function beginLine(line) {
       const m = trGame.move(line.moves[0][0]); if (!m) return;
       trBoard.setFen(trGame.fen(), { lastMove: { from: m.from, to: m.to } });
       drill.ply = 1; updateEval(); renderMoves(); trBoard.lock(false);
-      coach(line.idea || 'Your move.'); trBoard.tryPremove();
+      coach(dIdea(line) || t('msg.yourMove')); trBoard.tryPremove();
     }, 350);
   } else {
-    trBoard.lock(false); coach(line.idea || 'Your move — play your repertoire move.');
+    trBoard.lock(false); coach(dIdea(line) || t('msg.yourMove'));
   }
   setArrows();
 }
@@ -742,18 +780,18 @@ function learnStep(dir) {
   if (!drill.active || drill.mode !== 'learn' || !drill.line) return;
   if (dir > 0) {
     if (drill.ply >= drill.line.moves.length) return;
-    const [san, cm] = drill.line.moves[drill.ply];
+    const san = drill.line.moves[drill.ply][0]; const cm = dComment(drill.line, drill.ply);
     const m = trGame.move(san); if (!m) return;
     trBoard.setFen(trGame.fen(), { lastMove: { from: m.from, to: m.to } });
     coach(`${m.color === 'w' ? '▲' : '▼'} ${m.san}${cm ? ' — ' + cm : ''}`);
     drill.ply++;
-    if (drill.ply >= drill.line.moves.length) coach('That’s the whole line. Try Practice, or pick another line.', 'ok');
+    if (drill.ply >= drill.line.moves.length) coach(t('msg.wholeLinePractice'), 'ok');
   } else {
     if (drill.ply <= 0) return;
     trGame.undo(); drill.ply--;
     const h = trGame.history({ verbose: true });
     trBoard.setFen(trGame.fen(), { lastMove: h.length ? { from: h[h.length - 1].from, to: h[h.length - 1].to } : null, silent: true });
-    coach(drill.ply > 0 ? (drill.line.moves[drill.ply - 1][1] || drill.line.idea || '…') : 'Start of the line.');
+    coach(drill.ply > 0 ? (dComment(drill.line, drill.ply - 1) || dIdea(drill.line) || '…') : t('msg.startOfLine'));
   }
   updateEval(); renderMoves(); setArrows();
 }
@@ -763,16 +801,16 @@ function learnMove(from, to, promo) {              // Learn mode: drag the next 
   const exp = drill.line.moves[drill.ply][0], before = trGame.fen();
   const mv = trGame.move({ from, to, promotion: promo }); if (!mv) return;
   if (norm(mv.san) === norm(exp)) {
-    const cm = drill.line.moves[drill.ply][1];
+    const cm = dComment(drill.line, drill.ply);
     trBoard.setFen(trGame.fen(), { lastMove: { from, to } }); trBoard.setShapes([]);
     coach(`${mv.color === 'w' ? '▲' : '▼'} ${mv.san}${cm ? ' — ' + cm : ''}`);
     drill.ply++; updateEval(); renderMoves(); setArrows();
-    if (drill.ply >= drill.line.moves.length) coach('That’s the whole line. Switch to Practice to play it yourself.', 'ok');
+    if (drill.ply >= drill.line.moves.length) coach(t('msg.wholeLineSwitch'), 'ok');
   } else {
     trGame.undo(); trBoard.setFen(before, { silent: true }); Sound.error();
-    const m = trGame.move(exp); const f = m.from, t = m.to; trGame.undo();
-    trBoard.setShapes([{ from: f, to: t }]);
-    coach(`Not that one — the next move is ${exp}. Drag it, or press ›.`);
+    const m = trGame.move(exp); const f = m.from, t2 = m.to; trGame.undo();
+    trBoard.setShapes([{ from: f, to: t2 }]);
+    coach(t('msg.notThatOne', { exp }));
   }
 }
 function trMove(from, to, promo) {
@@ -787,16 +825,16 @@ function trMove(from, to, promo) {
     drill.correct += drill.hinted ? 0 : 1; $('#trCorrect').textContent = drill.correct;
     trBoard.setFen(trGame.fen(), { lastMove: { from, to } });
     trBoard.flash(to, 'ok'); trBoard.setShapes([]);
+    const cm = dComment(drill.line, drill.ply);
     const step = drill.line.moves[drill.ply];
-    const cm = step[1];
-    const ov = step[2]?.correct ? { correct: step[2].correct } : drill.line.messages;   // per-step > per-line > global
+    const ov = step[2]?.correct ? { correct: step[2].correct } : dMessages(drill.line);   // per-step > per-line > global
     coach(coachSay('correct', {}, ov) + (cm ? ' ' + cm : ''), 'ok');
     drill.ply++; drill.hinted = false; updateEval(); renderMoves();
     setTimeout(afterUserMove, 360);
   } else {
     trGame.undo(); trBoard.setFen(before, { silent: true }); Sound.error();
     drill.mistake = true; drill.wrong++; $('#trWrong').textContent = drill.wrong;
-    const wov = drill.line.moves[drill.ply]?.[2]?.wrong ? { wrong: drill.line.moves[drill.ply][2].wrong } : drill.line.messages;
+    const wov = drill.line.moves[drill.ply]?.[2]?.wrong ? { wrong: drill.line.moves[drill.ply][2].wrong } : dMessages(drill.line);
     coach(coachSay('wrong', { exp }, wov), 'bad'); trBoard.flash(to, 'bad');
     if (drill.mode !== 'practice') {           // drill: reveal the move, then continue
       trBoard.lock(true);
@@ -817,14 +855,14 @@ function afterUserMove() {
   trBoard.setFen(trGame.fen(), { lastMove: m ? { from: m.from, to: m.to } : null });
   drill.ply++; updateEval(); renderMoves();
   if (drill.ply >= drill.line.moves.length) return finishLine();
-  coach('Your move.'); trBoard.tryPremove();
+  coach(t('msg.yourMove')); trBoard.tryPremove();
 }
 function finishLine() {
   trBoard.lock(true);
   const ok = !drill.mistake;
   Store.record(repo.id, drill.line.id, ok);
   refreshMastery();
-  coach(coachSay(ok ? 'done' : 'doneMiss', {}, drill.line.messages), ok ? 'ok' : 'bad');
+  coach(coachSay(ok ? 'done' : 'doneMiss', {}, dMessages(drill.line)), ok ? 'ok' : 'bad');
   if (ok) Sound.success();
   setTimeout(() => { if (drill.active && drill.mode !== 'learn') nextLine(); }, 1300);
 }
@@ -836,16 +874,16 @@ function startRound() {
   trGame = new Chess(); trBoard.setOrientation(userOrient()); trBoard.setUserColor(userColor()); trBoard.clearPremove();
   trBoard.setFen(trGame.fen(), { silent: true }); trBoard.setShapes([]);
   drill.rounds++; $('#trRounds').textContent = drill.rounds;
-  $('#trOpName').textContent = repo.name; $('#trLineIdx').textContent = `live game · round ${drill.rounds}`;
+  $('#trOpName').textContent = dName(repo); $('#trLineIdx').textContent = `${t('stats.rounds')} ${drill.rounds}`;
   updateEval(); renderMoves(); setArrows();
   Sound.round();
   if (trGame.turn() !== userColor()) {       // trainee is Black — the bot (White) opens
     trBoard.lock(true);
-    coach(`Round ${drill.rounds} — I open as White; answer with your repertoire.`);
+    coach(t('msg.roundOpenWhite', { n: drill.rounds }));
     setTimeout(hyperBotMove, 500);
   } else {
     trBoard.lock(false);
-    coach(`Round ${drill.rounds} — you’re ${userColor() === 'w' ? 'White' : 'Black'}. Play your repertoire and I’ll answer.`);
+    coach(t('msg.roundYouAre', { n: drill.rounds, color: userColor() === 'w' ? t('color.white') : t('color.black') }));
   }
 }
 function hyperExpected() {
@@ -862,8 +900,8 @@ function hyperUserMove(from, to, promo) {
     trGame.undo(); trBoard.setFen(before, { silent: true }); Sound.error();
     const exp = hyperExpected();
     // per-opening custom off-book line if the repertoire defines one, else the global default
-    const ov = repo.offBook?.length ? { offBook: repo.offBook } : null;
-    coach(exp ? coachSay('offBook', { exp }, ov) : 'That leaves your repertoire.', 'bad');
+    const ov = dOffBook(repo)?.length ? { offBook: dOffBook(repo) } : null;
+    coach(exp ? coachSay('offBook', { exp }, ov) : t('msg.leavesRepertoire'), 'bad');
     trBoard.flash(to, 'bad');
     return;
   }
@@ -871,7 +909,7 @@ function hyperUserMove(from, to, promo) {
   trBoard.setFen(trGame.fen(), { lastMove: { from, to } });
   trBoard.flash(to, 'ok'); trBoard.setShapes([]); updateEval(); renderMoves();
   if (!hyper.candidates.some(l => l.moves[hyper.ply])) return hyperWin();
-  coach('Good — my turn…'); trBoard.lock(true);
+  coach(t('msg.goodMyTurn')); trBoard.lock(true);
   setTimeout(hyperBotMove, 500);
 }
 function hyperBotMove() {
@@ -885,12 +923,12 @@ function hyperBotMove() {
   hyper.candidates = cands.filter(l => norm(l.moves[hyper.ply][0]) === norm(bsan));
   hyper.ply++; updateEval(); renderMoves(); trBoard.lock(false);
   if (!hyper.candidates.some(l => l.moves[hyper.ply])) return hyperWin();
-  coach('Your move.'); trBoard.tryPremove();
+  coach(t('msg.yourMove')); trBoard.tryPremove();
 }
 function hyperWin() {
   trBoard.lock(true);
-  const name = hyper.candidates[0]?.name;
-  coach(`You held the line${name ? ` — ${name}` : ''}! Press ↻ New round to face another.`, 'ok');
+  const name = hyper.candidates[0] ? dLineName(hyper.candidates[0]) : null;
+  coach(t('msg.heldLine', { name: name ? t('msg.heldLineName', { name }) : '' }), 'ok');
   Sound.success();
   if (hyper.candidates[0]) Store.record(repo.id, hyper.candidates[0].id, true);
   refreshMastery();
@@ -901,10 +939,10 @@ function doHint() {
   if (drill.mode === 'learn') return learnStep(1);
   const exp = drill.mode === 'hyper' ? hyperExpected() : (trGame.turn() === userColor() ? expectedSan() : null);
   if (!exp) return;
-  const m = trGame.move(exp); if (!m) return; const f = m.from, t = m.to; trGame.undo();
+  const m = trGame.move(exp); if (!m) return; const f = m.from, tt = m.to; trGame.undo();
   if (drill.mode !== 'hyper') drill.hinted = true;
-  trBoard.setShapes([{ from: f, to: t }]);
-  coach('The arrow marks the move.');
+  trBoard.setShapes([{ from: f, to: tt }]);
+  coach(t('msg.arrowHint'));
 }
 
 function refreshMastery() {
@@ -916,9 +954,9 @@ function refreshMastery() {
     const box = Store.mastery(repo.id, l.id);
     const sel = drill.line && drill.line.id === l.id ? 'sel' : '';
     const disc = Store.isDiscovered(repo.id, l.id);
-    const due = Store.isDue(repo.id, l.id) ? `<span class="pill ${groupPill(l.group)}">due</span>` : '';
+    const due = Store.isDue(repo.id, l.id) ? `<span class="pill ${groupPill(l.group)}">${t('stats.due')}</span>` : '';
     return `<div class="varitem ${sel}" data-line="${l.id}">
-      <div><span class="nm">${disc ? '' : '<i class="undisc">•</i>'}${l.name}</span><div class="mastery">${dots(box)}</div></div>
+      <div><span class="nm">${disc ? '' : '<i class="undisc">•</i>'}${dLineName(l)}</span><div class="mastery">${dots(box)}</div></div>
       ${due}</div>`;
   }).join('');
   $('#trMastery').querySelectorAll('[data-line]').forEach(el => el.onclick = () => {
@@ -963,7 +1001,7 @@ function goBack() {
   trBoard.clearPremove(); trBoard.lock(false);
   trBoard.setFen(trGame.fen(), { lastMove: h.length ? { from: h[h.length - 1].from, to: h[h.length - 1].to } : null, silent: true });
   trBoard.setShapes([]); updateEval(); renderMoves(); setArrows();
-  coach('⟲ Rewound — your move.');
+  coach(t('msg.rewound'));
 }
 document.addEventListener('keydown', e => {
   if (!$('#view-train').classList.contains('active') || !drill.active) return;
@@ -973,9 +1011,13 @@ document.addEventListener('keydown', e => {
 
 // ---- custom coach messages ----
 (function buildMsgCfg() {
-  $('#trMsgFields').innerHTML = MSG_FIELDS.map(f =>
-    `<div class="mf"><label>${f.label}</label><textarea data-msg="${f.key}" rows="3"></textarea></div>`).join('');
+  function render() {
+    $('#trMsgFields').innerHTML = MSG_FIELDS().map(f =>
+      `<div class="mf"><label>${f.label}</label><textarea data-msg="${f.key}" rows="3"></textarea></div>`).join('');
+  }
+  render();
   function load() {
+    render();
     $('#trMsgFields').querySelectorAll('textarea').forEach(t => {
       t.value = messagesFor(t.dataset.msg).join('\n');
     });
@@ -985,7 +1027,7 @@ document.addEventListener('keydown', e => {
   $('#trMsgSave').onclick = () => {
     $('#trMsgFields').querySelectorAll('textarea').forEach(t => saveMessages(t.dataset.msg, t.value));
     $('#trMsgCfg').hidden = true;
-    coach('Messages saved.', 'ok');
+    coach(t('settings.messagesSaved'), 'ok');
   };
   $('#trMsgReset').onclick = () => {
     const p = Store.prefs(); p.messages = {}; Store.setPref('messages', {}); load();

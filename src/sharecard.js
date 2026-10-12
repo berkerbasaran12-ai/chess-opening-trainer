@@ -74,7 +74,7 @@ export async function renderShareCard(canvas, data) {
 
   // kicker
   ctx.font = `600 14px ${MONO}`; ctx.fillStyle = GOLD;
-  ctx.fillText('Y O U R   S T Y L E', PAD, 168);
+  ctx.fillText(data.kicker || 'Y O U R   S T Y L E', PAD, 168);
 
   // hero verdict: "<Style>  · 1.e4"
   const verdict = `${data.styleLabel}`;
@@ -91,9 +91,9 @@ export async function renderShareCard(canvas, data) {
 
   // stat pills
   let px = PAD; const py = baseY + 56;
-  px += pill(ctx, px, py, 'WIN', data.winRate + '%') + 12;
-  px += pill(ctx, px, py, 'AVG', data.avgMoves + ' moves') + 12;
-  px += pill(ctx, px, py, '', data.n + ' games') + 12;
+  px += pill(ctx, px, py, data.winLabel || 'WIN', data.winRate + '%') + 12;
+  px += pill(ctx, px, py, data.avgLabel || 'AVG', data.avgMoves + (data.movesSuffix ?? ' moves')) + 12;
+  px += pill(ctx, px, py, '', data.n + (data.gamesSuffix ?? ' games')) + 12;
 
   // divider
   ctx.strokeStyle = 'rgba(255,255,255,.08)'; ctx.lineWidth = 1;
@@ -102,7 +102,7 @@ export async function renderShareCard(canvas, data) {
   // recommendations
   const recs = [data.white, data.black].filter(Boolean);
   ctx.font = `600 13px ${MONO}`; ctx.fillStyle = DIM;
-  ctx.fillText('W H A T   T O   P L A Y', PAD, py + 74 + 34);
+  ctx.fillText(data.whatToPlay || 'W H A T   T O   P L A Y', PAD, py + 74 + 34);
   let ry = py + 74 + 64;
   for (const r of recs) {
     ctx.font = `600 15px ${MONO}`; ctx.fillStyle = GOLD;
@@ -115,9 +115,9 @@ export async function renderShareCard(canvas, data) {
 
   // footer
   ctx.font = `400 17px ${MONO}`; ctx.fillStyle = DIM;
-  ctx.fillText('daxaur.github.io/tabia', PAD, H - 56);
+  ctx.fillText('chess.marbasa.com', PAD, H - 56);
   ctx.textAlign = 'right'; ctx.fillStyle = INK; ctx.font = `600 17px ${MONO}`;
-  ctx.fillText('find your opening  →', W - PAD, H - 56);
+  ctx.fillText(data.cta || 'find your opening  →', W - PAD, H - 56);
   ctx.textAlign = 'left';
   return canvas;
 }
@@ -141,7 +141,7 @@ export async function shareCardImage(canvas, text, name) {
     if (!blob) return false;
     const file = new File([blob], `tabia-${name || 'coach'}.png`, { type: 'image/png' });
     if (navigator.canShare && navigator.canShare({ files: [file] })) {
-      await navigator.share({ files: [file], text, url: 'https://daxaur.github.io/tabia/' });
+      await navigator.share({ files: [file], text, url: 'https://chess.marbasa.com/' });
       return true;
     }
   } catch {}
