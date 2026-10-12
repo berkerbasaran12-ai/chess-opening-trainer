@@ -1,9 +1,9 @@
 // tabia — minimal i18n layer. EN is the source of truth; TR is a full translation.
 // Usage: t('some.key', { var: 'x' }) looks up the template for the current
 // language and substitutes {var} placeholders; falls back to EN, then the key.
-import { Store } from './store.js?v=51';
+import { Store } from './store.js?v=52';
 
-export function getLang() { return Store.prefs().lang === 'tr' ? 'tr' : 'en'; }
+export function getLang() { return Store.prefs().lang === 'en' ? 'en' : 'tr'; }   // TR is the default for first-time visitors
 export function setLang(l) { Store.setPref('lang', l === 'tr' ? 'tr' : 'en'); }
 
 const DICT = {

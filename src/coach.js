@@ -1,7 +1,7 @@
 // tabia — the coach. Speaks before/after moves. Messages are user-configurable
 // and stored in the browser; these are just the defaults.
-import { Store } from './store.js?v=51';
-import { getLang } from './i18n.js?v=51';
+import { Store } from './store.js?v=52';
+import { getLang } from './i18n.js?v=52';
 
 const DEFAULT_MESSAGES_EN = {
   start:    ['Let\'s drill. Play the repertoire move.', 'Board\'s set. Show me the line.', 'Warm up those reflexes — your move.'],
