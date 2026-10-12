@@ -14,14 +14,16 @@ import { repertoire as benoni } from './benoni.js?v=50';
 import { repertoire as oldbenoni } from './benonigambit.js?v=50';
 import { repertoire as scotchgambit } from './scotchgambit.js?v=50';
 import { repertoire as viennagambit } from './viennagambit.js?v=50';
+import { repertoire as kingsindian } from './kingsindian.js?v=50';
+import { repertoire as pirc } from './pirc.js?v=50';
 
-export const openings = [bdg, scotchgambit, viennagambit, jobava, budapest, alien, oldbenoni, benoni, qg, ruylopez, italian, sicilian, french, carokann];
+export const openings = [bdg, scotchgambit, viennagambit, jobava, budapest, alien, oldbenoni, benoni, qg, ruylopez, italian, sicilian, french, carokann, kingsindian, pirc];
 
 // browse-by-category + which ones are tabia originals (curated, aggressive)
 const CATEGORY = {
   bdg: 'Gambits', scotchgambit: 'Gambits', viennagambit: 'Gambits', budapest: 'Gambits', alien: 'Gambits', jobava: 'Systems', oldbenoni: 'Gambits',
   qg: 'Classical', ruylopez: 'Classical', italian: 'Classical',
-  sicilian: 'Defences', french: 'Defences', carokann: 'Defences', benoni: 'Defences',
+  sicilian: 'Defences', french: 'Defences', carokann: 'Defences', benoni: 'Defences', kingsindian: 'Defences', pirc: 'Defences',
 };
 for (const o of openings) o.category = o.category || CATEGORY[o.id] || 'Other';
 export const CATEGORIES = ['Gambits', 'Classical', 'Defences', 'Systems'];
